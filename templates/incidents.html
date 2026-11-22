@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Incident Management | LOGIN TWIN{% endblock %}
+{% block page_title %}🚨 Incident Case Management & Investigation{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: {% if active_incident %}1.05fr 0.95fr{% else %}1fr{% endif %}; gap: 24px;">
+  <!-- Left Side: Incidents Table & New Case Trigger -->
+  <div>
+    <!-- Top Action Bar -->
+    <div class="card" style="margin-bottom: 20px; padding: 16px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <form method="GET" action="{{ url_for('incidents.incidents_page') }}" style="display: flex; gap: 10px; align-items: center;">
+        <span style="font-size: 0.76rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase;">STATUS:</span>
+        <select name="status" class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onchange="this.form.submit()">
+          <option value="">All Incidents</option>
+          <option value="New" {% if current_status == 'New' %}selected{% endif %}>New</option>
+          <option value="Investigating" {% if current_status == 'Investigating' %}selected{% endif %}>Investigating</option>
+          <option value="Resolved" {% if current_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+          <option value="Closed" {% if current_status == 'Closed' %}selected{% endif %}>Closed</option>
+        </select>
+      </form>
+
+      <button class="btn btn-primary btn-sm" onclick="openModal('newIncidentModal')">
+        ➕ Initiate Incident Case
+      </button>
+    </div>
+
+    <!-- Incidents Table -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Incident Case Title</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th>Linked Alerts</th>
+              <th>Created</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if incidents %}
+              {% for inc in incidents %}
+                <tr {% if active_incident and active_incident.id == inc.id %}style="background: rgba(14, 165, 233, 0.14); border-left: 3px solid var(--accent-sky);"{% endif %}>
+                  <td><span class="code-font" style="color: var(--accent-sky);">#{{ inc.id }}</span></td>
+                  <td style="font-weight: 700; color: #fff;">{{ inc.title }}</td>
+                  <td><span class="badge badge-{{ inc.severity | lower }}">{{ inc.severity }}</span></td>
+                  <td><span class="badge badge-status {{ inc.status | lower }}">{{ inc.status }}</span></td>
+                  <td><span class="badge badge-status">{{ inc.alert_count }} alerts</span></td>
+                  <td style="font-size: 0.78rem; color: var(--text-dim);">{{ inc.created_at | time_ago }}</td>
+                  <td>
+                    <a href="{{ url_for('incidents.incident_detail_page', incident_id=inc.id) }}" class="btn btn-secondary btn-sm">Investigate</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 60px 20px;">
+                  <div style="max-width: 440px; margin: 0 auto;">
+                    <img src="{{ url_for('static', filename='images/shield-core.svg') }}" alt="Shield" style="width: 72px; height: 72px; opacity: 0.85; margin-bottom: 14px; filter: drop-shadow(0 0 10px rgba(14,165,233,0.3));">
+                    <h4 style="font-size: 1.1rem; color: #fff; margin-bottom: 6px; font-weight: 700;">Zero Open Incident Cases</h4>
+                    <p style="font-size: 0.84rem; color: var(--text-dim); margin-bottom: 18px; line-height: 1.5;">
+                      Clean queue. Formal incident cases are initiated by escalating from active alerts or clicking "Initiate Incident Case" above.
+                    </p>
+                    <button class="btn btn-primary btn-sm" onclick="openModal('newIncidentModal')">➕ Initiate Incident Case</button>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Active Incident Investigation Workbench -->
+  {% if active_incident %}
+    <div>
+      <div class="card" style="position: sticky; top: 84px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+          <div>
+            <span class="badge badge-status">Incident Case #{{ active_incident.id }}</span>
+            <h2 style="font-size: 1.3rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ active_incident.title }}</h2>
+          </div>
+          <span class="badge badge-{{ active_incident.severity | lower }}" style="font-size: 0.86rem; padding: 5px 12px;">
+            {{ active_incident.severity }}
+          </span>
+        </div>
+
+        <div style="font-size: 0.88rem; color: #cbd5e1; background: #080d19; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 18px; line-height: 1.5;">
+          {{ active_incident.summary }}
+        </div>
+
+        <!-- Investigation Checklist (Blueprint Section 6.4) -->
+        <div style="padding: 16px; background: rgba(15, 23, 42, 0.7); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 18px;">
+          <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--accent-sky); margin-bottom: 10px; letter-spacing: 0.8px;">
+            SOC Investigation Checklist
+          </div>
+          <div style="font-size: 0.8rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px;">
+            <div>☑ Threshold checked: {{ active_incident.alerts | length }} security alert(s) linked</div>
+            <div>☑ Evidence timeline evaluated in UTC ISO-8601</div>
+            <div>☑ Explored NAT/shared IP possibilities vs coordinated attack</div>
+            <div>☑ Mitigation action recorded in audit log</div>
+          </div>
+        </div>
+
+        <!-- Status Transition Box -->
+        <div style="padding: 16px; background: #090e1c; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 18px;">
+          <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; letter-spacing: 0.8px;">
+            Change Lifecycle Status (Current: <span class="badge badge-status {{ active_incident.status | lower }}">{{ active_incident.status }}</span>)
+          </div>
+
+          <form action="{{ url_for('incidents.update_incident_status_action', incident_id=active_incident.id) }}" method="POST">
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+              <select name="status" class="form-control" style="font-size: 0.84rem;" required>
+                {% if active_incident.status == 'New' %}
+                  <option value="Investigating">Move to Investigating</option>
+                  <option value="Closed">Close (Confirmed Noise)</option>
+                {% elif active_incident.status == 'Investigating' %}
+                  <option value="Resolved">Mark Resolved</option>
+                  <option value="New">Revert to New</option>
+                {% elif active_incident.status == 'Resolved' %}
+                  <option value="Closed">Formally Close Incident</option>
+                  <option value="Investigating">Reopen for Investigation</option>
+                {% elif active_incident.status == 'Closed' %}
+                  <option value="Investigating">Reopen Incident</option>
+                {% endif %}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <input type="text" name="note" class="form-control" placeholder="Resolution / Transition justification note (Required for Resolved)" style="font-size: 0.82rem;">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">Record Status Transition</button>
+          </form>
+        </div>
+
+        <!-- Add Investigation Note Form -->
+        <div style="margin-bottom: 18px;">
+          <form action="{{ url_for('incidents.add_note_action', incident_id=active_incident.id) }}" method="POST" style="display: flex; gap: 8px;">
+            <input type="text" name="note" class="form-control" placeholder="Add analyst investigation note..." required style="font-size: 0.82rem;">
+            <button type="submit" class="btn btn-secondary btn-sm" style="white-space: nowrap;">Post Note</button>
+          </form>
+        </div>
+
+        <!-- Timeline / History of Transitions -->
+        <div class="metric-title" style="margin-bottom: 10px;">
+          <span>Investigation Audit History ({{ active_incident.history | length }})</span>
+          <span>Append-Only</span>
+        </div>
+        <div style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          {% for h in active_incident.history %}
+            <div style="padding: 10px 14px; background: #080d19; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: 700; color: #fff;">
+                  {% if h.old_status and h.old_status != h.new_status %}
+                    Status: {{ h.old_status }} → <span style="color: var(--accent-sky);">{{ h.new_status }}</span>
+                  {% else %}
+                    Analyst Note
+                  {% endif %}
+                </span>
+                <span style="color: var(--text-dim); font-size: 0.74rem;">{{ h.created_at | time_ago }}</span>
+              </div>
+              {% if h.note %}
+                <div style="color: var(--text-muted); font-style: italic;">"{{ h.note }}"</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal: Create New Incident -->
+<div id="newIncidentModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">➕ Initiate New Incident Case</h3>
+      <button class="modal-close" onclick="closeModal('newIncidentModal')">&times;</button>
+    </div>
+    <form action="{{ url_for('incidents.create_incident_action') }}" method="POST">
+      <div class="form-group">
+        <label class="form-label">Incident Title</label>
+        <input type="text" name="title" class="form-control" placeholder="e.g. Coordinated Credential Attack on Admin Accounts" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Severity Level</label>
+        <select name="severity" class="form-control">
+          <option value="Critical">Critical</option>
+          <option value="High" selected>High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Incident Summary & Scope</label>
+        <textarea name="summary" class="form-control" rows="4" placeholder="Detail observed telemetry, attacker IP addresses, targeted accounts, and scope of impact..." required></textarea>
+      </div>
+
+      {% if available_alerts %}
+        <div class="form-group">
+          <label class="form-label">Link Available Alerts</label>
+          <div style="max-height: 140px; overflow-y: auto; background: #080d19; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+            {% for alt in available_alerts %}
+              <label class="custom-check-item" style="padding: 8px 12px; margin-bottom: 6px;">
+                <input type="checkbox" name="alert_ids" value="{{ alt.id }}">
+                <span style="font-size: 0.82rem; color: #fff;">#{{ alt.id }} ({{ alt.rule_code }}): {{ alt.title }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('newIncidentModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Register Incident Case</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

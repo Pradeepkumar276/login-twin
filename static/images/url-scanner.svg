@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="urlGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="32" stroke="url(#urlGrad)" stroke-width="5" fill="#0b1120"/>
+  <line x1="74" y1="74" x2="105" y2="105" stroke="#38bdf8" stroke-width="8" stroke-linecap="round"/>
+  <!-- Lock inside lens -->
+  <rect x="42" y="46" width="16" height="12" rx="2" fill="#38bdf8"/>
+  <path d="M46 46 V40 C46 37 54 37 54 40 V46" stroke="#38bdf8" stroke-width="2.5" fill="none"/>
+  <!-- Pulse rings -->
+  <circle cx="50" cy="50" r="22" stroke="rgba(56, 189, 248, 0.3)" stroke-dasharray="4 4" stroke-width="2"/>
+</svg>

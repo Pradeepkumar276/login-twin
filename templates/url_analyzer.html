@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}URL Threat Analyzer | LOGIN TWIN{% endblock %}
+{% block page_title %}🔍 Advanced URL Threat Analyzer{% endblock %}
+
+{% block content %}
+<!-- Security Notice Banner -->
+<div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-sky); background: rgba(6, 182, 212, 0.06); padding: 16px 20px;">
+  <div style="font-size: 0.86rem; color: #cbd5e1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <strong style="color: var(--accent-sky);">Deterministic Security Guarantee (FR-02):</strong>
+      All URL syntax analysis is performed <em>strictly locally</em> via Python standard library (<code>urllib.parse</code>). 
+      Login Twin <strong>never connects to, fetches, or crawls submitted URLs</strong>.
+    </div>
+    <span class="badge badge-low">ZERO NETWORK TRANSMISSION</span>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 24px;">
+  <!-- Left Column: Input Form & Results -->
+  <div>
+    <!-- Input Card -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+        <img src="{{ url_for('static', filename='images/url-scanner.svg') }}" alt="Scanner" style="width: 44px; height: 44px; filter: drop-shadow(0 0 10px rgba(56,189,248,0.4));">
+        <div>
+          <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Inspect Target URL</h3>
+          <div style="font-size: 0.76rem; color: var(--text-dim);">8 Deterministic Local Rules • Bounded Scoring (0–100)</div>
+        </div>
+      </div>
+      
+      <form action="{{ url_for('url_analyzer.url_analyzer_page') }}" method="POST">
+        <div class="form-group">
+          <label class="form-label" for="urlInput">Target URL String</label>
+          <input 
+            type="text" 
+            id="urlInput" 
+            name="url" 
+            class="form-control code-font" 
+            placeholder="e.g. http://192.0.2.15/login/verify-account?token=auth" 
+            value="{% if scan_result %}{{ scan_result.submitted_url }}{% endif %}"
+            required
+            style="font-size: 0.92rem; padding: 12px 14px;"
+          >
+        </div>
+
+        <!-- Quick Demo Lures Preset Buttons -->
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 0.74rem; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;">
+            Rapid Test Lures:
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('urlInput').value='https://portal.service.example.invalid/dashboard';">Benign HTTPS</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('urlInput').value='http://192.0.2.55/login/update-password';">IP-Literal + HTTP</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('urlInput').value='http://verify.secure.login.banking.example.invalid/account?token=%20%20%20';">Deep Subdomain</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('urlInput').value='https://bit.ly/secure-account-sync-2026';">URL Shortener</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('urlInput').value='https://xn--pple-43d.example.invalid/login';">Homograph (Punycode)</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem; justify-content: center;">
+          <span>🔍 Run Deterministic Threat Inspection</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Scan Results Card -->
+    {% if scan_result %}
+      <div class="card" id="scanResultsCard">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+          <div>
+            <div style="font-size: 0.74rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Normalized Target Host</div>
+            <div class="code-font" style="font-size: 1.25rem; color: #fff; margin-top: 4px; font-weight: 700;">{{ scan_result.normalized_host }}</div>
+          </div>
+          <span class="badge badge-{{ scan_result.risk_level | lower }}" style="font-size: 0.88rem; padding: 6px 14px;">
+            {{ scan_result.risk_level }} RISK
+          </span>
+        </div>
+
+        <!-- High-Tech Score Gauge Box -->
+        <div class="score-gauge-box" style="background: rgba(9, 14, 28, 0.7); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 22px;">
+          <div class="score-number {{ scan_result.risk_level | lower }}">{{ scan_result.score }}<span style="font-size: 1.6rem; color: var(--text-dim); font-weight: 600;">/100</span></div>
+          <div class="score-label" style="color: var(--text-muted);">{{ scan_result.risk_wording }}</div>
+          <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 8px;">
+            Display Bands: 0–19 Low • 20–49 Medium • 50–74 High • 75–100 Critical
+          </div>
+        </div>
+
+        <!-- Analyst Action Advisory -->
+        <div style="padding: 16px 20px; border-radius: 8px; background: rgba(14, 23, 42, 0.8); border-left: 4px solid var(--accent-sky); margin-bottom: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+          <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--accent-sky); margin-bottom: 4px; letter-spacing: 0.8px;">Defensive Recommendation</div>
+          <div style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.5;">{{ scan_result.action_recommendation }}</div>
+        </div>
+
+        <!-- Triggered Rules Breakdown -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div class="metric-title" style="margin: 0;">
+            <span>Triggered Risk Indicators ({{ scan_result.findings | length }})</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="copyText(document.getElementById('scanResultsCard').innerText, this)">
+            📋 Copy Scan Findings
+          </button>
+        </div>
+
+        {% if scan_result.findings %}
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            {% for finding in scan_result.findings %}
+              <div style="padding: 16px; background: #080d19; border-radius: 8px; border: 1px solid var(--border-color); transition: border-color 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-weight: 700; font-size: 0.92rem; color: #fff;">
+                    <span class="badge badge-status" style="margin-right: 8px;">{{ finding.rule_id }}</span>
+                    {{ finding.title }}
+                  </span>
+                  <span class="badge badge-high">+{{ finding.points }} pts</span>
+                </div>
+                <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 6px; line-height: 1.5;">
+                  {{ finding.explanation }}
+                </p>
+                {% if finding.caution %}
+                  <div style="font-size: 0.76rem; color: var(--text-dim); font-style: italic; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 6px; margin-top: 6px;">
+                    <strong style="color: var(--sev-medium);">Caution:</strong> {{ finding.caution }}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="padding: 28px; text-align: center; background: rgba(16, 185, 129, 0.05); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2); color: var(--sev-low); font-size: 0.9rem;">
+            ✓ No suspicious risk indicators were triggered by the 8 local deterministic rules.
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Scan History & Rule Spec -->
+  <div>
+    <!-- Recent Scans History -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="metric-title" style="margin-bottom: 14px;">
+        <span>Recent URL Scans</span>
+        <span class="badge badge-status">{{ recent_scans | length }} Recorded</span>
+      </div>
+
+      {% if recent_scans %}
+        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto;">
+          {% for scan in recent_scans %}
+            <a href="{{ url_for('url_analyzer.view_saved_scan', scan_id=scan.id) }}" style="text-decoration: none; display: block; padding: 12px 14px; background: #080d19; border: 1px solid var(--border-color); border-radius: 8px; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-sky)'" onmouseout="this.style.borderColor='var(--border-color)'">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span class="code-font" style="font-size: 0.84rem; color: #fff; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600;">
+                  {{ scan.normalized_host }}
+                </span>
+                <span class="badge badge-{{ scan.risk_level | lower }}">{{ scan.score }} pts</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-dim);">
+                <span>{{ scan.risk_level }} Risk</span>
+                <span>{{ scan.scanned_at | time_ago }}</span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="color: var(--text-dim); font-size: 0.82rem; text-align: center; padding: 30px 10px;">
+          No scan history available yet. Submit a URL on the left to record the first inspection.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Implemented Rules Legend -->
+    <div class="card">
+      <div class="metric-title" style="margin-bottom: 14px;">
+        <span>Deterministic Rule Specification</span>
+        <span>Local Checks</span>
+      </div>
+      <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);"><span class="code-font" style="color: var(--accent-sky);">URL-001</span><span>Non-HTTPS Protocol (+5)</span></div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);"><span class="code-font" style="color: var(--accent-sky);">URL-002</span><span>IP-Literal Host (+20)</span></div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);"><span class="code-font" style="color: var(--accent-sky);">URL-003</span><span>Suspicious Keywords (+5 ea, max +15)</span></div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);"><span class="code-font" style="color: var(--accent-sky);">URL-004</span><span>Excessive Length >75 (+10)</span></div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);"><span class="code-font" style="color: var(--accent-sky);">URL-005</span><span>Unusual Subdomain Depth (+10)</span></div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);"><span class="code-font" style="color: var(--accent-sky);">URL-006</span><span>High Obfuscation / @ (+10)</span></div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);"><span class="code-font" style="color: var(--accent-sky);">URL-007</span><span>URL Shortener Host (+10)</span></div>
+        <div style="display: flex; justify-content: space-between;"><span class="code-font" style="color: var(--accent-sky);">URL-008</span><span>Punycode / Homograph (+15)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

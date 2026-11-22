@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}LOGIN TWIN | Mini-SIEM & Threat Platform{% endblock %} - Advanced Cyber Defense</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js CDN for interactive SOC telemetry visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Left Cyber Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">
+        <img src="{{ url_for('static', filename='images/shield-core.svg') }}" alt="Shield" style="width: 26px; height: 26px;">
+      </div>
+      <div class="logo-text">
+        <h1>LOGIN TWIN</h1>
+        <p>Security learning and monitoring</p>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <div class="nav-section-title">Overview</div>
+      <li>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+          <span class="nav-icon">📊</span>
+          <span>Security dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('url_analyzer.url_analyzer_page') }}" class="nav-link {% if 'url_analyzer' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">🔍</span>
+          <span>Link checker</span>
+        </a>
+      </li>
+      <li>
+        <!-- Renamed from Phishing Lab to Phishing Quiz/Awareness -->
+        <a href="{{ url_for('phishing_lab.phishing_lab_index') }}" class="nav-link {% if 'phishing_lab' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">🛡️</span>
+          <span>Phishing awareness</span>
+        </a>
+      </li>
+
+      <div class="nav-section-title">Activity and alerts</div>
+      <li>
+        <a href="{{ url_for('soc_monitor.soc_events_page') }}" class="nav-link {% if 'soc_monitor' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">📡</span>
+          <span>Security activity</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('alerts.alerts_page') }}" class="nav-link {% if 'alerts' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">⚠️</span>
+          <span>Alerts to review</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('incidents.correlations_page') }}" class="nav-link {% if 'correlations' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">🔗</span>
+          <span>Related activity</span>
+        </a>
+      </li>
+
+      <div class="nav-section-title">Cases and history</div>
+      <li>
+        <a href="{{ url_for('incidents.incidents_page') }}" class="nav-link {% if 'incidents' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">🚨</span>
+          <span>Incident cases</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('incidents.audit_page') }}" class="nav-link {% if 'audit' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">📜</span>
+          <span>Activity history</span>
+        </a>
+      </li>
+
+      <div class="nav-section-title">Learning and help</div>
+      <li>
+        <a href="{{ url_for('chatbot.chatbot_page') }}" class="nav-link {% if 'chatbot' in request.endpoint %}active{% endif %}" style="color: var(--accent-sky);">
+          <span class="nav-icon">🤖</span>
+          <span>Security helper</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="system-status">
+        <span class="status-dot"></span>
+        <span>MONITORING IS READY</span>
+      </div>
+      <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">Training project • v1.0</div>
+      <form action="{{ url_for('dashboard.reset_database_action') }}" method="POST" onsubmit="return confirm('Delete all saved activity, alerts, link checks, and incidents? This cannot be undone.');" style="margin: 0;">
+        <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; justify-content: center; opacity: 0.85;">
+          🗑️ Clear saved data
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Main Body Wrapper -->
+  <div class="main-wrapper">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="page-title">
+        {% block page_title %}Security Overview{% endblock %}
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Live Cyber Digital Clock -->
+        <div class="cyber-clock" id="cyberClock" title="Current time in India Standard Time">
+          <span>🕒 IST:</span>
+          <span id="istTimeText">--:--:--</span>
+        </div>
+
+        <!-- Seed Demo Events Quick Menu -->
+        <form action="{{ url_for('soc_monitor.demo_events_action') }}" method="POST" style="display: inline-flex; align-items: center; gap: 8px;">
+          <select name="scenario" class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.78rem;">
+            <option value="brute_force">Sample: Repeated sign-in failures</option>
+            <option value="password_spray">Sample: Attempts across accounts</option>
+            <option value="suspicious_ip">Sample: Unusual activity from one address</option>
+            <option value="access_denied">Sample: Repeated access denied</option>
+            <option value="invalid_requests">Sample: Invalid requests</option>
+            <option value="correlated_attack">Sample: Multi-step activity</option>
+            <option value="benign_traffic">Sample: Normal activity</option>
+          </select>
+          <button type="submit" class="btn btn-secondary btn-sm">⚡ Add sample activity</button>
+        </form>
+
+        <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-primary btn-sm">
+          <span>🤖 Security help</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="content-body">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash-message flash-{{ category }}">
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% if error_title %}
+        <div class="card" style="text-align: center; padding: 60px 20px;">
+          <h2 style="color: var(--sev-critical); margin-bottom: 12px;">{{ error_title }}</h2>
+          <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 24px;">{{ error_message }}</p>
+          <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Return to SOC Dashboard</a>
+        </div>
+      {% else %}
+        {% block content %}{% endblock %}
+      {% endif %}
+    </main>
+
+    <!-- Global Footer -->
+    <footer style="padding: 18px 34px; border-top: 1px solid var(--border-color); font-size: 0.78rem; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center; background: rgba(5, 8, 17, 0.8);">
+      <div>Login Twin • Department of Information Technology • Training project</div>
+      <div>Link checks do not visit websites. Sample activity is not live monitoring.</div>
+    </footer>
+  </div>
+
+  <!-- Global Floating Copilot Button & Quick Drawer -->
+  <button id="floatingBotBtn" class="floating-bot-trigger" onclick="toggleFloatingChat()" title="Open Feature Explainer Assistant">
+    <img src="{{ url_for('static', filename='images/robot-assistant.svg') }}" alt="Bot" style="width: 26px; height: 26px;">
+    <span>Security help</span>
+  </button>
+
+  <div id="floatingChatDrawer" class="floating-chat-drawer">
+    <div class="floating-chat-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <img src="{{ url_for('static', filename='images/robot-assistant.svg') }}" alt="Bot" style="width: 22px; height: 22px;">
+        <span style="font-size: 0.9rem; font-weight: 700; color: #fff;">Login Twin Help</span>
+      </div>
+      <button class="modal-close" onclick="toggleFloatingChat()">&times;</button>
+    </div>
+    <div id="floatingChatMessages" class="floating-chat-body">
+      <div class="chat-bubble bot" style="font-size: 0.8rem; line-height: 1.5; color: #cbd5e1;">
+        👋 Hi! Ask me about checking links, spotting phishing messages, reviewing alerts, or how this app works.
+      </div>
+    </div>
+    <div class="floating-chat-footer">
+      <form onsubmit="handleFloatingSubmit(event)" style="display: flex; gap: 6px;">
+        <input type="text" id="floatingInput" class="form-control" placeholder="Ask a question..." aria-label="Ask a question" style="font-size: 0.8rem; padding: 6px 10px;" required>
+        <button type="submit" class="btn btn-primary btn-sm" style="padding: 0 12px;">Ask</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    // Live Cyber Clock
+    function updateClock() {
+      const time = new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).format(new Date());
+      const el = document.getElementById('istTimeText');
+      if (el) el.textContent = time;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Floating Chat logic
+    function toggleFloatingChat() {
+      const drawer = document.getElementById('floatingChatDrawer');
+      if (drawer.style.display === 'flex') {
+        drawer.style.display = 'none';
+      } else {
+        drawer.style.display = 'flex';
+        document.getElementById('floatingInput').focus();
+      }
+    }
+
+    function handleFloatingSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('floatingInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const body = document.getElementById('floatingChatMessages');
+      const userDiv = document.createElement('div');
+      userDiv.className = 'chat-bubble user';
+      userDiv.style.fontSize = '0.8rem';
+      userDiv.style.alignSelf = 'flex-end';
+      userDiv.textContent = text;
+      body.appendChild(userDiv);
+      input.value = '';
+      body.scrollTop = body.scrollHeight;
+
+      fetch('/api/chatbot/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: text })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const botDiv = document.createElement('div');
+        botDiv.className = 'chat-bubble bot';
+        botDiv.style.fontSize = '0.8rem';
+        botDiv.style.lineHeight = '1.5';
+        botDiv.style.color = '#cbd5e1';
+        
+        let formatted = data.answer
+          .replace(/^### (.*$)/gim, '<strong style="color:#fff; display:block; margin-top:4px;">$1</strong>')
+          .replace(/\*\*(.*?)\*\*/gim, '<strong style="color:#fff;">$1</strong>')
+          .replace(/\n\n/g, '<br><br>')
+          .replace(/\n/g, '<br>');
+
+        botDiv.innerHTML = formatted;
+        body.appendChild(botDiv);
+        body.scrollTop = body.scrollHeight;
+      })
+      .catch(err => {
+        const errDiv = document.createElement('div');
+        errDiv.className = 'chat-bubble bot';
+        errDiv.style.color = 'var(--sev-critical)';
+        errDiv.textContent = 'Error: ' + err;
+        body.appendChild(errDiv);
+      });
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

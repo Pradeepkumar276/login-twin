@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Event Correlation Engine | LOGIN TWIN{% endblock %}
+{% block page_title %}🔗 Security Event Correlation Engine{% endblock %}
+
+{% block content %}
+<!-- Notice Banner -->
+<div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-indigo); background: rgba(99, 102, 241, 0.08); padding: 18px 22px;">
+  <div style="font-size: 0.88rem; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div style="max-width: 700px;">
+      <strong style="color: #a5b4fc;">Explainable Correlation Architecture (FR-10):</strong>
+      Connects distinct detection alerts and events that share explicit correlation keys (such as an IP executing multi-stage attacks across multiple accounts) within sliding time intervals.
+    </div>
+    <form action="{{ url_for('incidents.run_correlations_action') }}" method="POST" style="margin: 0;">
+      <button type="submit" class="btn btn-primary btn-sm">⚡ Run Correlation Analysis</button>
+    </form>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: {% if active_correlation %}1.05fr 0.95fr{% else %}1fr{% endif %}; gap: 24px;">
+  <!-- Left Side: Correlation Groups List -->
+  <div>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Correlation Type</th>
+              <th>Shared Pivot Key</th>
+              <th>Alerts</th>
+              <th>Events</th>
+              <th>Created</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if correlations %}
+              {% for c in correlations %}
+                <tr {% if active_correlation and active_correlation.id == c.id %}style="background: rgba(99, 102, 241, 0.14); border-left: 3px solid var(--accent-indigo);"{% endif %}>
+                  <td><span class="code-font" style="color: var(--accent-sky);">#{{ c.id }}</span></td>
+                  <td><span class="badge badge-status">{{ c.correlation_type }}</span></td>
+                  <td class="code-font" style="color: var(--accent-sky); font-weight: 700;">{{ c.correlation_key }}</td>
+                  <td><span class="badge badge-medium">{{ c.alert_count }} alerts</span></td>
+                  <td><span class="code-font">{{ c.event_count }} events</span></td>
+                  <td style="font-size: 0.78rem; color: var(--text-dim);">{{ c.created_at | time_ago }}</td>
+                  <td>
+                    <a href="{{ url_for('incidents.correlation_detail_page', correlation_id=c.id) }}" class="btn btn-secondary btn-sm">Inspect</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 60px 20px;">
+                  <div style="max-width: 440px; margin: 0 auto;">
+                    <img src="{{ url_for('static', filename='images/correlation-mesh.svg') }}" alt="Correlation Mesh" style="width: 80px; height: 80px; opacity: 0.85; margin-bottom: 14px; filter: drop-shadow(0 0 10px rgba(168,85,247,0.3));">
+                    <h4 style="font-size: 1.1rem; color: #fff; margin-bottom: 6px; font-weight: 700;">Zero Correlated Incident Groups</h4>
+                    <p style="font-size: 0.84rem; color: var(--text-dim); margin-bottom: 18px; line-height: 1.5;">
+                      Correlation automatically links multi-stage attack patterns sharing the same IP address or target account across sliding time intervals.
+                    </p>
+                    <form action="{{ url_for('soc_monitor.demo_events_action') }}" method="POST" style="display: inline-block;">
+                      <input type="hidden" name="scenario" value="correlated_attack">
+                      <button type="submit" class="btn btn-secondary btn-sm">⚡ Seed Multi-Stage Correlated Attack</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Active Correlation Inspection -->
+  {% if active_correlation %}
+    <div>
+      <div class="card" style="position: sticky; top: 84px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+          <div>
+            <span class="badge badge-status">Correlation Case #{{ active_correlation.id }}</span>
+            <h2 style="font-size: 1.3rem; font-weight: 800; color: #fff; margin-top: 4px;">Pivot: {{ active_correlation.correlation_key }}</h2>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 2px;">Group Type: {{ active_correlation.correlation_type }}</div>
+          </div>
+          <span class="badge badge-medium">{{ active_correlation.alerts | length }} Linked Alerts</span>
+        </div>
+
+        <!-- Explanation Block -->
+        <div style="padding: 16px; background: #080d19; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.88rem; color: #cbd5e1; margin-bottom: 16px; line-height: 1.6;">
+          {{ active_correlation.explanation }}
+        </div>
+
+        <!-- Safety Disclaimer -->
+        <div style="font-size: 0.76rem; color: var(--text-dim); font-style: italic; margin-bottom: 22px; border-left: 3px solid var(--sev-medium); padding-left: 10px;">
+          Investigation Note: Correlation establishes operational proximity and shared infrastructure; it provides investigative leads rather than forensic attribution.
+        </div>
+
+        <!-- Member Alerts -->
+        <div class="metric-title" style="margin-bottom: 10px;">
+          <span>Associated Alerts ({{ active_correlation.alerts | length }})</span>
+          <span>Rules Triggered</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px;">
+          {% for alt in active_correlation.alerts %}
+            <div style="padding: 12px 14px; background: #090e1c; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="badge badge-status" style="margin-right: 8px; font-weight: 700;">{{ alt.rule_code }}</span>
+                <span style="font-size: 0.88rem; font-weight: 700; color: #fff;">{{ alt.title }}</span>
+              </div>
+              <a href="{{ url_for('alerts.alert_detail_page', alert_id=alt.id) }}" class="btn btn-secondary btn-sm">Inspect Alert</a>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Timeline of Member Events -->
+        <div class="metric-title" style="margin-bottom: 10px;">
+          <span>Correlated Attack Timeline ({{ active_correlation.events | length }})</span>
+          <span>Chronology</span>
+        </div>
+        <div style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          {% for ev in active_correlation.events %}
+            <div style="padding: 10px 14px; background: #080d19; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="code-font" style="color: var(--accent-sky); font-weight: 700;">{{ ev.event_time | time_ago }}</span>
+                <span class="code-font" style="margin-left: 10px; color: #fff;">{{ ev.event_type }}</span>
+                <span style="color: var(--text-dim); margin-left: 8px;">Target: {{ ev.account_id or ev.resource or 'N/A' }}</span>
+              </div>
+              <span class="badge badge-status" style="font-size: 0.7rem;">{{ ev.outcome }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+[
+  {
+    "event_time": "2026-11-20T14:10:00Z",
+    "source": "auth_service",
+    "event_type": "login",
+    "outcome": "success",
+    "source_ip": "192.0.2.15",
+    "account_id": "operator_sarah",
+    "resource": "/dashboard",
+    "details": {"method": "password_mfa", "user_agent": "Mozilla/5.0 Chrome/128"}
+  },
+  {
+    "event_time": "2026-11-20T14:11:15Z",
+    "source": "auth_service",
+    "event_type": "login",
+    "outcome": "success",
+    "source_ip": "192.0.2.22",
+    "account_id": "analyst_david",
+    "resource": "/soc/events",
+    "details": {"method": "sso_token"}
+  },
+  {
+    "event_time": "2026-11-20T14:12:30Z",
+    "source": "auth_service",
+    "event_type": "login",
+    "outcome": "failure",
+    "source_ip": "192.0.2.33",
+    "account_id": "engineer_mike",
+    "resource": "/login",
+    "details": {"reason": "expired_temporary_token"}
+  },
+  {
+    "event_time": "2026-11-20T14:13:00Z",
+    "source": "auth_service",
+    "event_type": "login",
+    "outcome": "success",
+    "source_ip": "192.0.2.33",
+    "account_id": "engineer_mike",
+    "resource": "/login",
+    "details": {"reason": "renewed_credential"}
+  }
+]

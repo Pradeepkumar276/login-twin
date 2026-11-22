@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <rect x="20" y="30" width="80" height="55" rx="6" fill="#0f172a" stroke="#f59e0b" stroke-width="3"/>
+  <path d="M22 33 L60 62 L98 33" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+  <!-- Warning badge -->
+  <circle cx="85" cy="72" r="14" fill="#ef4444" stroke="#070b14" stroke-width="2"/>
+  <path d="M85 64 V72" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="85" cy="78" r="1.5" fill="#fff"/>
+  <!-- Hook -->
+  <path d="M40 70 C40 85 55 85 55 75 C55 65 48 65 48 65" stroke="#38bdf8" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>

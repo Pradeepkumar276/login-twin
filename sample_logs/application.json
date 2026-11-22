@@ -1,0 +1,32 @@
+[
+  {
+    "event_time": "2026-11-20T15:00:10Z",
+    "source": "api_gateway",
+    "event_type": "request_invalid",
+    "outcome": "invalid",
+    "source_ip": "198.51.100.44",
+    "account_id": null,
+    "resource": "/api/v1/query?id='%20OR%201=1--",
+    "details": {"waf_rule": "sql_syntax_filter", "status_code": 400}
+  },
+  {
+    "event_time": "2026-11-20T15:01:25Z",
+    "source": "api_gateway",
+    "event_type": "access_denied",
+    "outcome": "denied",
+    "source_ip": "198.51.100.44",
+    "account_id": "intern_clerk",
+    "resource": "/api/v1/admin/users",
+    "details": {"reason": "forbidden_scope_read_only"}
+  },
+  {
+    "event_time": "2026-11-20T15:05:00Z",
+    "source": "url_scanner",
+    "event_type": "url_scan",
+    "outcome": "success",
+    "source_ip": "192.0.2.1",
+    "account_id": "analyst_david",
+    "resource": "/url-analyzer",
+    "details": {"scanned_host": "example.invalid", "risk_band": "LOW"}
+  }
+]

@@ -1,0 +1,52 @@
+[
+  {
+    "event_time": "2026-11-20T16:00:00Z",
+    "source": "sample_file",
+    "event_type": "login",
+    "outcome": "failure",
+    "source_ip": "198.51.100.27",
+    "account_id": "m.chen@training.example.invalid",
+    "resource": "/auth/sign-in",
+    "details": {"attempt": 1, "reason": "invalid_password", "client": "browser"}
+  },
+  {
+    "event_time": "2026-11-20T16:00:45Z",
+    "source": "sample_file",
+    "event_type": "login",
+    "outcome": "failure",
+    "source_ip": "198.51.100.27",
+    "account_id": "m.chen@training.example.invalid",
+    "resource": "/auth/sign-in",
+    "details": {"attempt": 2, "reason": "invalid_password", "client": "browser"}
+  },
+  {
+    "event_time": "2026-11-20T16:01:30Z",
+    "source": "sample_file",
+    "event_type": "login",
+    "outcome": "failure",
+    "source_ip": "198.51.100.27",
+    "account_id": "m.chen@training.example.invalid",
+    "resource": "/auth/sign-in",
+    "details": {"attempt": 3, "reason": "invalid_password", "client": "browser"}
+  },
+  {
+    "event_time": "2026-11-20T16:02:15Z",
+    "source": "sample_file",
+    "event_type": "login",
+    "outcome": "failure",
+    "source_ip": "198.51.100.27",
+    "account_id": "m.chen@training.example.invalid",
+    "resource": "/auth/sign-in",
+    "details": {"attempt": 4, "reason": "invalid_password", "client": "browser"}
+  },
+  {
+    "event_time": "2026-11-20T16:03:00Z",
+    "source": "sample_file",
+    "event_type": "login",
+    "outcome": "failure",
+    "source_ip": "198.51.100.27",
+    "account_id": "m.chen@training.example.invalid",
+    "resource": "/auth/sign-in",
+    "details": {"attempt": 5, "reason": "invalid_password", "client": "browser"}
+  }
+]

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Phishing Quiz & Awareness | LOGIN TWIN{% endblock %}
+{% block page_title %}🛡️ Phishing Quiz & Awareness Platform{% endblock %}
+
+{% block content %}
+<!-- Safe Training Notice -->
+<div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--sev-low); background: rgba(16, 185, 129, 0.06); padding: 16px 20px;">
+  <div style="font-size: 0.86rem; color: #cbd5e1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <strong style="color: var(--sev-low);">Safe Educational Training Environment (FR-05):</strong>
+      Interactive phishing simulations utilize reserved RFC example domains (<code>.example.invalid</code>).
+      <strong>No passwords or sensitive credentials are ever requested, transmitted, or stored.</strong>
+    </div>
+    <span class="badge badge-low">ZERO CREDENTIAL HARVESTING</span>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 24px;">
+  <!-- Left Column: Scenario Catalog -->
+  <div>
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="metric-title" style="margin-bottom: 14px;">
+        <span>Phishing Quiz Scenarios</span>
+        <span class="badge badge-status">{{ scenarios | length }} Scenarios</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        {% for sc in scenarios %}
+          <a href="{{ url_for('phishing_lab.open_scenario', code=sc.code) }}" 
+             style="text-decoration: none; padding: 14px 16px; background: {% if active_scenario and active_scenario.code == sc.code %}rgba(14, 165, 233, 0.16){% else %}#080d19{% endif %}; border: 1px solid {% if active_scenario and active_scenario.code == sc.code %}var(--accent-sky){% else %}var(--border-color){% endif %}; border-radius: 10px; display: block; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-sky)'" onmouseout="if('{{ active_scenario.code if active_scenario else '' }}' !== '{{ sc.code }}') this.style.borderColor='var(--border-color)'">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="badge badge-status" style="font-weight: 700;">{{ sc.code }}</span>
+              <span style="font-size: 0.74rem; color: var(--accent-sky); font-weight: 600;">{{ sc.category }}</span>
+            </div>
+            <div style="font-size: 0.92rem; font-weight: 700; color: #fff; margin-bottom: 4px;">{{ sc.title }}</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">{{ sc.story[:90] }}...</div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Past Quiz Training History -->
+    <div class="card">
+      <div class="metric-title" style="margin-bottom: 12px;">
+        <span>Awareness Quiz History</span>
+        <span>Past Scores</span>
+      </div>
+      {% if history %}
+        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
+          {% for ev in history %}
+            <div style="padding: 10px 14px; background: #080d19; border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 0.82rem; font-weight: 700; color: #fff;">{{ ev.scenario_code }} - {{ ev.scenario_title }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim);">Completed {{ ev.completed_at | time_ago }}</div>
+              </div>
+              <span class="badge badge-{% if ev.score >= 80 %}low{% elif ev.score >= 50 %}medium{% else %}critical{% endif %}" style="font-size: 0.78rem;">
+                {{ ev.score }}%
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="font-size: 0.82rem; color: var(--text-dim); text-align: center; padding: 24px 10px;">
+          No completions recorded yet. Choose a scenario above to test your phishing detection skills!
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Interactive Phishing Simulation Quiz / Evaluation Result -->
+  <div>
+    {% if evaluation %}
+      <!-- Evaluation Feedback Card -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+          <div>
+            <span class="badge badge-status">{{ evaluation.scenario_code }} Score Report</span>
+            <h2 style="font-size: 1.3rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ evaluation.scenario_title }}</h2>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 2.6rem; font-weight: 900; font-family: var(--font-mono); color: {% if evaluation.total_score >= 80 %}var(--sev-low){% elif evaluation.total_score >= 50 %}var(--sev-medium){% else %}var(--sev-critical){% endif %}; line-height: 1;">
+              {{ evaluation.total_score }}%
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-top: 4px;">Awareness Score</div>
+          </div>
+        </div>
+
+        <!-- Key Educational Takeaway -->
+        <div style="padding: 16px 20px; border-radius: 8px; background: rgba(56, 189, 248, 0.08); border-left: 4px solid var(--accent-sky); margin-bottom: 20px;">
+          <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--accent-sky); margin-bottom: 4px; letter-spacing: 0.8px;">Core Training Takeaway</div>
+          <div style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.5;">{{ evaluation.teaching_point }}</div>
+        </div>
+
+        <!-- Safe Action Evaluation -->
+        <div style="margin-bottom: 22px;">
+          <div class="metric-title" style="margin-bottom: 8px;">Defensive Action Assessment</div>
+          <div style="padding: 14px 18px; border-radius: 8px; background: #080d19; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 700; color: #fff;">{{ evaluation.action_feedback.selected_action_label }}</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">{{ evaluation.action_feedback.explanation }}</div>
+            </div>
+            <span class="badge badge-{% if evaluation.action_correct %}low{% else %}critical{% endif %}">
+              {% if evaluation.action_correct %}Safe Action (+40 pts){% else %}Risky Action (+0 pts){% endif %}
+            </span>
+          </div>
+        </div>
+
+        <!-- Indicator Identification Breakdown -->
+        <div>
+          <div class="metric-title" style="margin-bottom: 10px;">
+            <span>Indicator Identification Analysis (Score: {{ evaluation.indicator_score }}/60 pts)</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            {% for item in evaluation.indicator_feedback %}
+              <div style="padding: 12px 16px; background: #080d19; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.84rem; max-width: 75%;">
+                  <span style="color: #fff; font-weight: 600;">{{ item.label }}</span>
+                  <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">{{ item.comment }}</div>
+                </div>
+                <span class="badge badge-{% if item.status == 'correct_identified' or item.status == 'correct_ignored' %}low{% else %}critical{% endif %}">
+                  {{ item.status | replace('_', ' ') | capitalize }}
+                </span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center;">
+          <a href="{{ url_for('phishing_lab.phishing_lab_index') }}" class="btn btn-secondary">← Select Another Scenario</a>
+          <a href="{{ url_for('url_analyzer.url_analyzer_page') }}" class="btn btn-primary">Check Threat URL in Analyzer →</a>
+        </div>
+      </div>
+    {% elif active_scenario %}
+      <!-- Active Simulation Quiz Card -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <span class="badge badge-status">{{ active_scenario.code }} Scenario</span>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ active_scenario.title }}</h2>
+          </div>
+          <span class="badge badge-medium">{{ active_scenario.category }}</span>
+        </div>
+
+        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+          <strong style="color: #fff;">Scenario Context:</strong> {{ active_scenario.story }}
+        </p>
+
+        <!-- Simulated Email Client Mockup -->
+        <div class="email-mockup">
+          <div class="email-header-row">
+            <span class="email-header-label">From:</span>
+            <span class="email-header-val" style="color: #38bdf8;">{{ active_scenario.displayed_sender }}</span>
+          </div>
+          <div class="email-header-row">
+            <span class="email-header-label">Subject:</span>
+            <span class="email-header-val" style="color: #fca5a5; font-weight: 700;">{{ active_scenario.displayed_subject }}</span>
+          </div>
+          <div class="email-header-row">
+            <span class="email-header-label">Target Link:</span>
+            <span class="email-header-val" style="color: var(--accent-cyan); text-decoration: underline;">{{ active_scenario.displayed_link }}</span>
+          </div>
+          <div class="email-body">{{ active_scenario.body_text }}</div>
+        </div>
+
+        <!-- Safe Dummy Interaction Mockup -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 22px;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.9px; color: var(--text-dim); margin-bottom: 8px; font-weight: 700;">
+            Simulated Landing Form Preview (Safe Educational Inspection)
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" class="form-control" style="background: #080d19; font-size: 0.82rem;" placeholder="[Dummy Input Disabled - No actual passwords accepted]" disabled>
+            <button type="button" class="btn btn-secondary btn-sm" disabled style="opacity: 0.6;">Continue training</button>
+          </div>
+        </div>
+
+        <!-- Quiz Submission Form -->
+        <form action="{{ url_for('phishing_lab.submit_scenario_quiz', code=active_scenario.code) }}" method="POST">
+          <!-- Question 1: Indicators -->
+          <div style="margin-bottom: 22px;">
+            <label class="form-label" style="font-size: 0.92rem; color: #fff; font-weight: 700;">
+              Question 1: Which clues in this communication indicate phishing or deception? (Select all that apply)
+            </label>
+            <div style="margin-top: 10px;">
+              {% for ind in active_scenario.available_indicators %}
+                <label class="custom-check-item">
+                  <input type="checkbox" name="indicators" value="{{ ind.id }}">
+                  <span style="font-size: 0.86rem; color: #cbd5e1; font-weight: 500;">{{ ind.label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Question 2: Safe Action -->
+          <div style="margin-bottom: 26px;">
+            <label class="form-label" style="font-size: 0.92rem; color: #fff; font-weight: 700;">
+              Question 2: What is the recommended safe defensive action to take?
+            </label>
+            <div style="margin-top: 10px;">
+              {% for act in active_scenario.safe_action_options %}
+                <label class="custom-check-item">
+                  <input type="radio" name="safe_action" value="{{ act.id }}" required>
+                  <span style="font-size: 0.86rem; color: #cbd5e1; font-weight: 500;">{{ act.label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem; justify-content: center;">
+            <span>Submit Quiz Answers & Evaluate Awareness Score</span>
+          </button>
+        </form>
+      </div>
+    {% else %}
+      <!-- Empty State / Welcome -->
+      <div class="card" style="text-align: center; padding: 64px 30px;">
+        <img src="{{ url_for('static', filename='images/phishing-lab.svg') }}" alt="Phishing Quiz" style="width: 76px; height: 76px; margin-bottom: 16px; filter: drop-shadow(0 0 15px rgba(245,158,11,0.3));">
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 8px;">Select a Phishing Scenario</h3>
+        <p style="font-size: 0.86rem; color: var(--text-dim); max-width: 460px; margin: 0 auto 24px; line-height: 1.5;">
+          Choose an educational simulation from the catalog on the left to inspect simulated email headers, spot lures, and practice defensive decision making with zero credential risk.
+        </p>
+        <a href="{{ url_for('phishing_lab.open_scenario', code='PH-001') }}" class="btn btn-primary">Start Scenario PH-001 →</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

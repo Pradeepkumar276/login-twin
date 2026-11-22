@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail & Hash Chain | LOGIN TWIN{% endblock %}
+{% block page_title %}📜 Tamper-Evident Audit Trail & SHA-256 Chain{% endblock %}
+
+{% block content %}
+<!-- Cryptographic Verification Banner -->
+<div class="card"
+  style="margin-bottom: 24px; padding: 22px 26px; border-left: 4px solid {% if integrity.valid %}var(--sev-low){% else %}var(--sev-critical){% endif %}; background: {% if integrity.valid %}rgba(16, 185, 129, 0.07){% else %}rgba(239, 68, 68, 0.1){% endif %};">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+        <span class="badge badge-{% if integrity.valid %}low{% else %}critical{% endif %}"
+          style="font-size: 0.88rem; padding: 5px 12px;">
+          {{ integrity.integrity_level }}
+        </span>
+        <span style="font-size: 0.82rem; color: var(--accent-sky); font-family: var(--font-mono);">{{
+          integrity.hash_algorithm }}</span>
+      </div>
+      <p style="font-size: 0.92rem; color: #fff; margin-top: 6px; font-weight: 600;">
+        {{ integrity.message }}
+      </p>
+      {% if integrity.mismatch %}
+      <div
+        style="margin-top: 8px; font-size: 0.82rem; color: #fca5a5; font-family: var(--font-mono); background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 6px;">
+        Tampering Discrepancy: Record #{{ integrity.mismatch.record_id }} hash mismatch!
+      </div>
+      {% endif %}
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center;">
+      {% if logs %}
+      <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('auditTable', 'login_twin_audit_log.csv')">
+        📥 Export CSV
+      </button>
+      {% endif %}
+      <form action="{{ url_for('incidents.verify_audit_action') }}" method="POST" style="margin: 0;">
+        <button type="submit" class="btn btn-primary btn-sm">
+          🔒 Run SHA-256 Verification
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Architecture & Explainability Callout -->
+<div class="card"
+  style="margin-bottom: 24px; padding: 20px 24px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+  <img src="{{ url_for('static', filename='images/hash-chain.svg') }}" alt="Hash Chain"
+    style="width: 140px; height: auto; flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(56,189,248,0.25));">
+  <div style="flex: 1; min-width: 280px;">
+    <div class="metric-title" style="color: var(--accent-sky); margin-bottom: 6px;">
+      <span>Cryptographic Hash Chaining Mechanism (Blueprint Section 4.6)</span>
+      <span>Merkle-Style Sequential Link</span>
+    </div>
+    <p style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.6;">
+      {{ integrity.educational_note }}
+    </p>
+  </div>
+</div>
+
+<!-- Audit Filter & Table -->
+<div class="card"
+  style="margin-bottom: 20px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+  <span style="font-size: 0.82rem; color: var(--text-dim); font-weight: 700;">AUDIT LEDGER RECORDS: {{ logs | length
+    }}</span>
+  <input type="text" id="auditSearchInput" class="form-control" placeholder="Search audit actions..."
+    onkeyup="filterTableLive('auditSearchInput', 'auditTable')"
+    style="width: 220px; padding: 6px 12px; font-size: 0.82rem;">
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="table-responsive">
+    <table class="table-custom" id="auditTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Action</th>
+          <th>Entity</th>
+          <th>Details</th>
+          <th>Previous SHA-256 Hash</th>
+          <th>Entry SHA-256 Hash</th>
+          <th>Timestamp (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if logs %}
+        {% for log in logs %}
+        <tr>
+          <td><span class="code-font" style="color: var(--accent-sky); font-weight: 700;">#{{ log.id }}</span></td>
+          <td><span class="badge badge-status" style="font-size: 0.72rem; font-weight: 700;">{{ log.action }}</span>
+          </td>
+          <td class="code-font" style="font-size: 0.8rem; color: #fff;">{{ log.entity_type }} ({{ log.entity_id }})</td>
+          <td
+            style="font-size: 0.8rem; color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ log.details | pretty_json }}
+          </td>
+          <td>
+            <span class="code-font" style="font-size: 0.74rem; color: var(--text-dim); cursor: pointer;"
+              title="Click to copy: {{ log.previous_hash }}" onclick="copyText('{{ log.previous_hash }}', this)">
+              {{ log.previous_hash[:10] }}...{{ log.previous_hash[-6:] }}
+            </span>
+          </td>
+          <td>
+            <span class="code-font"
+              style="font-size: 0.74rem; color: var(--accent-sky); cursor: pointer; font-weight: 600;"
+              title="Click to copy: {{ log.entry_hash }}" onclick="copyText('{{ log.entry_hash }}', this)">
+              {{ log.entry_hash[:10] }}...{{ log.entry_hash[-6:] }}
+            </span>
+          </td>
+          <td class="code-font" style="font-size: 0.76rem; color: var(--text-dim);">{{ log.created_at }}</td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-dim);">
+            No audit records generated yet.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

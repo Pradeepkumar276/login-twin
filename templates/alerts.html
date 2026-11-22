@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Security Alerts Triage | LOGIN TWIN{% endblock %}
+{% block page_title %}Security alerts{% endblock %}
+
+{% block content %}
+<div class="alerts-layout" style="display: grid; grid-template-columns: {% if active_alert %}1.05fr 0.95fr{% else %}1fr{% endif %}; gap: 24px;">
+  <!-- Left Side: Alerts List Table -->
+  <div>
+    <!-- Filter & Search Bar -->
+    <div class="card" style="margin-bottom: 20px; padding: 16px 22px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <form method="GET" action="{{ url_for('alerts.alerts_page') }}" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <span style="font-size: 0.76rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase;">Filter by:</span>
+          
+          <select name="status" class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onchange="this.form.submit()">
+            <option value="">Any status</option>
+            <option value="New" {% if current_status == 'New' %}selected{% endif %}>New</option>
+            <option value="Investigating" {% if current_status == 'Investigating' %}selected{% endif %}>Investigating</option>
+            <option value="Resolved" {% if current_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+            <option value="Closed" {% if current_status == 'Closed' %}selected{% endif %}>Closed</option>
+          </select>
+
+          <select name="severity" class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onchange="this.form.submit()">
+            <option value="">Any priority</option>
+            <option value="Critical" {% if current_severity == 'Critical' %}selected{% endif %}>Critical</option>
+            <option value="High" {% if current_severity == 'High' %}selected{% endif %}>High</option>
+            <option value="Medium" {% if current_severity == 'Medium' %}selected{% endif %}>Medium</option>
+            <option value="Low" {% if current_severity == 'Low' %}selected{% endif %}>Low</option>
+          </select>
+        </form>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" id="alertSearchInput" class="form-control" aria-label="Search alerts" placeholder="Search alerts..." onkeyup="filterTableLive('alertSearchInput', 'alertsTable')" style="width: 160px; padding: 5px 10px; font-size: 0.8rem;">
+          {% if alerts %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('alertsTable', 'login_twin_alerts.csv')">
+              📥 Download CSV
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts Table -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="table-responsive">
+        <table class="table-custom" id="alertsTable">
+          <thead>
+            <tr>
+              <th>Check</th>
+              <th>Alert Title</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Related activity</th>
+              <th>Most recent</th>
+              <th>Next step</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if alerts %}
+              {% for alt in alerts %}
+                <tr {% if active_alert and active_alert.id == alt.id %}style="background: rgba(14, 165, 233, 0.14); border-left: 3px solid var(--accent-sky);"{% endif %}>
+                  <td><span class="badge badge-status" style="font-weight: 700;">{{ alt.rule_code }}</span></td>
+                  <td style="font-weight: 700; color: #fff;">{{ alt.title }}</td>
+                  <td><span class="badge badge-{{ alt.severity | lower }}">{{ alt.severity }}</span></td>
+                  <td><span class="badge badge-status {{ alt.status | lower }}">{{ alt.status }}</span></td>
+                  <td><span class="code-font" style="color: var(--accent-sky);">{{ alt.event_count }} events</span></td>
+                  <td style="font-size: 0.78rem; color: var(--text-dim);">{{ alt.last_seen | time_ago }}</td>
+                  <td>
+                    <a href="{{ url_for('alerts.alert_detail_page', alert_id=alt.id) }}" class="btn btn-secondary btn-sm">View details</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 60px 20px;">
+                  <div style="max-width: 440px; margin: 0 auto;">
+                    <img src="{{ url_for('static', filename='images/radar-empty.svg') }}" alt="Radar" style="width: 72px; height: 72px; opacity: 0.85; margin-bottom: 12px;">
+                    <h4 style="font-size: 1.1rem; color: #fff; margin-bottom: 6px; font-weight: 700;">No alerts yet</h4>
+                    <p style="font-size: 0.84rem; color: var(--text-dim); margin-bottom: 18px; line-height: 1.5;">
+                      Alerts appear here when the app finds repeated failed sign-ins or other unusual activity. Add activity to start reviewing alerts.
+                    </p>
+                    <a href="{{ url_for('soc_monitor.soc_events_page') }}" class="btn btn-secondary btn-sm">View and add activity →</a>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Active Alert Triage Drawer -->
+  {% if active_alert %}
+    <div>
+      <div class="card" style="position: sticky; top: 84px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+          <div>
+            <span class="badge badge-status">Alert #{{ active_alert.id }} · Check {{ active_alert.rule_code }}</span>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ active_alert.title }}</h2>
+            <div style="font-size: 0.78rem; color: var(--accent-sky); margin-top: 2px; font-weight: 600;">{{ active_alert.rule_name }}</div>
+          </div>
+          <span class="badge badge-{{ active_alert.severity | lower }}" style="font-size: 0.86rem; padding: 5px 12px;">
+            {{ active_alert.severity }}
+          </span>
+        </div>
+
+        <p style="font-size: 0.88rem; color: #cbd5e1; background: #080d19; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 18px; line-height: 1.5;">
+          {{ active_alert.description }}
+        </p>
+
+        <!-- Meta Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 0.82rem; margin-bottom: 22px; background: rgba(14,23,42,0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div><span style="color: var(--text-dim);">System confidence:</span> <strong style="color: #fff; display: block; font-size: 1.1rem; font-family: var(--font-mono);">{{ active_alert.confidence }}%</strong></div>
+          <div><span style="color: var(--text-dim);">Related activity:</span> <strong style="color: var(--accent-sky); display: block; font-size: 1.1rem; font-family: var(--font-mono);">{{ active_alert.event_count }} events</strong></div>
+          <div><span style="color: var(--text-dim);">First detected:</span> <span class="code-font" style="display: block; font-size: 0.76rem;">{{ active_alert.first_seen }}</span></div>
+          <div><span style="color: var(--text-dim);">Last detected:</span> <span class="code-font" style="display: block; font-size: 0.76rem;">{{ active_alert.last_seen }}</span></div>
+        </div>
+
+        <!-- Status Lifecycle Control -->
+        <div style="padding: 16px; background: rgba(15, 23, 42, 0.7); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+          <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; letter-spacing: 0.8px;">
+            Update alert status
+          </div>
+          <form action="{{ url_for('alerts.update_status_action', alert_id=active_alert.id) }}" method="POST" style="display: flex; gap: 8px; align-items: center;">
+            <select name="status" class="form-control" style="font-size: 0.84rem;">
+              <option value="New" {% if active_alert.status == 'New' %}selected{% endif %}>New (not reviewed)</option>
+              <option value="Investigating" {% if active_alert.status == 'Investigating' %}selected{% endif %}>Being reviewed</option>
+              <option value="Resolved" {% if active_alert.status == 'Resolved' %}selected{% endif %}>Resolved (addressed)</option>
+              <option value="Closed" {% if active_alert.status == 'Closed' %}selected{% endif %}>Closed (no more action)</option>
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm" style="white-space: nowrap;">Save status</button>
+          </form>
+        </div>
+
+        <!-- Evidence Events List -->
+        <div class="metric-title" style="margin-bottom: 10px;">
+          <span>Related activity ({{ active_alert.evidence_events | length }})</span>
+          <span>Events linked to this alert</span>
+        </div>
+
+        <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+          {% for ev in active_alert.evidence_events %}
+            <div style="padding: 10px 14px; background: #080d19; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="code-font" style="color: var(--accent-sky); font-weight: 700;">#{{ ev.id }}</span>
+                <span class="code-font" style="margin: 0 8px; color: #fff;">{{ ev.event_type }}</span>
+                <span style="color: var(--text-dim);">Address: {{ ev.source_ip or 'Not available' }} | Account: {{ ev.account_id or 'Not available' }}</span>
+              </div>
+              <span class="badge badge-status" style="font-size: 0.7rem;">{{ ev.outcome }}</span>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Escalate to Incident Form -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 18px;">
+          <form action="{{ url_for('alerts.escalate_action', alert_id=active_alert.id) }}" method="POST">
+            <input type="hidden" name="title" value="Incident: {{ active_alert.title }}">
+            <input type="hidden" name="summary" value="{{ active_alert.description }}">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+              🚨 Create an incident from this alert
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Feature Explainer Chatbot | LOGIN TWIN{% endblock %}
+{% block page_title %}🤖 SOC Copilot & Feature Explainer Chatbot{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px;">
+  <!-- Left Side: Topic Navigator & Quick Questions -->
+  <div>
+    <!-- Bot Profile Card -->
+    <div class="card" style="margin-bottom: 20px; text-align: center; padding: 24px 20px;">
+      <div style="width: 72px; height: 72px; margin: 0 auto 12px; background: rgba(56, 189, 248, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-cyan);">
+        <img src="{{ url_for('static', filename='images/robot-assistant.svg') }}" alt="Bot" style="width: 44px; height: 44px;">
+      </div>
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">SOC Feature Copilot</h3>
+      <div style="font-size: 0.78rem; color: var(--accent-cyan); margin-top: 2px;">Academic Cybersecurity Assistant</div>
+      <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 10px; line-height: 1.4;">
+        Ask anything about the system architecture, 8 URL rules, phishing simulations, SIEM detections, correlation, or viva exam preparation.
+      </p>
+    </div>
+
+    <!-- Quick Question Buttons -->
+    <div class="card">
+      <div class="metric-title" style="margin-bottom: 12px;">
+        <span>Preset Topic Guide</span>
+        <span>Quick Ask</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start;" onclick="sendPreset('Explain the three main pillars of Login Twin')">
+          🏛️ The Three Main Pillars
+        </button>
+        <button class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start;" onclick="sendPreset('Explain URL-001 through URL-008 rules and scoring')">
+          🔍 URL Threat Rules (001-008)
+        </button>
+        <button class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start;" onclick="sendPreset('How does the safe phishing awareness lab work?')">
+          🛡️ Phishing Lab & Safe Policies
+        </button>
+        <button class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start;" onclick="sendPreset('What is DET-001 Brute Force vs DET-002 Password Spraying?')">
+          ⚠️ Brute Force vs Password Spray
+        </button>
+        <button class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start;" onclick="sendPreset('How does Event Correlation work in Login Twin?')">
+          🔗 Multi-Alert Event Correlation
+        </button>
+        <button class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start;" onclick="sendPreset('How does the SHA-256 Tamper-Evident Hash Chain work?')">
+          📜 Tamper-Evident Hash Chain
+        </button>
+        <button class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; color: var(--sev-medium);" onclick="sendPreset('What are the top viva and presentation questions?')">
+          🎓 B.Tech Viva Questions & Answers
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Interactive Chat Window -->
+  <div>
+    <div class="card" style="height: calc(100vh - 170px); display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+      <!-- Chat Header -->
+      <div style="padding: 16px 24px; border-bottom: 1px solid var(--border-color); background: #080d19; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="status-dot"></span>
+          <span style="font-size: 0.9rem; font-weight: 600; color: #fff;">Interactive Knowledge Assistant</span>
+        </div>
+        <span class="badge badge-status" id="chatBadge">Ready</span>
+      </div>
+
+      <!-- Messages Body -->
+      <div id="chatMessages" style="flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px;">
+        <!-- Welcome Message -->
+        <div class="chat-bubble bot">
+          <div style="font-size: 0.72rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">
+            SOC Copilot
+          </div>
+          <div class="bubble-content" style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.6;">
+            <strong>Welcome to the Login Twin Feature Explainer!</strong><br>
+            I am here to guide you through every capability of this Mini-SIEM and Cybersecurity Awareness platform.
+            Type any question below or click on the preset topics on the left to learn what was built, how it functions, and how to demonstrate it.
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggestions Pills -->
+      <div id="suggestionsBar" style="padding: 10px 20px; background: #090e1a; border-top: 1px solid rgba(30,41,59,0.5); display: flex; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 0.72rem; color: var(--text-dim); align-self: center;">Suggestions:</span>
+        <button class="btn btn-secondary btn-sm" onclick="sendPreset('Explain URL-001 through URL-008')">URL Rules</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendPreset('Explain the 5 detection rules')">Detection Rules</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendPreset('Explain the SHA-256 Hash Chain')">Hash Chain</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendPreset('Top viva questions')">Viva Prep</button>
+      </div>
+
+      <!-- Chat Input Form -->
+      <div style="padding: 16px 20px; background: #080d19; border-top: 1px solid var(--border-color);">
+        <form id="chatForm" onsubmit="handleChatSubmit(event)" style="display: flex; gap: 10px;">
+          <input 
+            type="text" 
+            id="chatInput" 
+            class="form-control" 
+            placeholder="Ask anything (e.g. 'How does brute force detection work?', 'Why does URL analyzer avoid network requests?')..." 
+            autocomplete="off"
+            required
+          >
+          <button type="submit" class="btn btn-primary" style="white-space: nowrap; padding: 0 20px;">
+            <span>Send 💬</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function sendPreset(query) {
+  document.getElementById('chatInput').value = query;
+  handleChatSubmit(new Event('submit'));
+}
+
+function handleChatSubmit(e) {
+  e.preventDefault();
+  const input = document.getElementById('chatInput');
+  const query = input.value.trim();
+  if (!query) return;
+
+  const messagesDiv = document.getElementById('chatMessages');
+
+  // Append user bubble
+  const userBubble = document.createElement('div');
+  userBubble.className = 'chat-bubble user';
+  userBubble.innerHTML = `
+    <div style="font-size: 0.72rem; color: #94a3b8; text-align: right; margin-bottom: 4px;">You</div>
+    <div class="bubble-content" style="font-size: 0.88rem; color: #fff;">${escapeHtml(query)}</div>
+  `;
+  messagesDiv.appendChild(userBubble);
+  input.value = '';
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  // Append typing indicator
+  const typingBubble = document.createElement('div');
+  typingBubble.className = 'chat-bubble bot';
+  typingBubble.id = 'typingBubble';
+  typingBubble.innerHTML = `<div style="font-size: 0.82rem; color: var(--accent-cyan);">⚡ Querying Cybersecurity Knowledge Engine...</div>`;
+  messagesDiv.appendChild(typingBubble);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  // Call API
+  fetch('/api/chatbot/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: query })
+  })
+  .then(res => res.json())
+  .then(data => {
+    typingBubble.remove();
+    const botBubble = document.createElement('div');
+    botBubble.className = 'chat-bubble bot';
+    
+    // Convert basic markdown formatting to HTML
+    let formattedAnswer = formatMarkdown(data.answer);
+
+    botBubble.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 0.72rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">SOC Copilot</span>
+        <span class="badge badge-status" style="font-size: 0.65rem;">${data.badge || 'Answer'}</span>
+      </div>
+      <div class="bubble-content" style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.6;">${formattedAnswer}</div>
+    `;
+    messagesDiv.appendChild(botBubble);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // Update suggestions
+    if (data.suggestions && data.suggestions.length) {
+      const bar = document.getElementById('suggestionsBar');
+      bar.innerHTML = '<span style="font-size: 0.72rem; color: var(--text-dim); align-self: center;">Related:</span>';
+      data.suggestions.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary btn-sm';
+        btn.textContent = s;
+        btn.onclick = () => sendPreset(s);
+        bar.appendChild(btn);
+      });
+    }
+  })
+  .catch(err => {
+    typingBubble.remove();
+    const errBubble = document.createElement('div');
+    errBubble.className = 'chat-bubble bot';
+    errBubble.innerHTML = `<div style="color: var(--sev-critical); font-size: 0.85rem;">Error retrieving explanation: ${err}</div>`;
+    messagesDiv.appendChild(errBubble);
+  });
+}
+
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+function formatMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/^### (.*$)/gim, '<h4 style="color:#fff; font-size:1rem; margin-top:8px; margin-bottom:6px;">$1</h4>')
+    .replace(/^## (.*$)/gim, '<h3 style="color:#38bdf8; font-size:1.1rem; margin-top:10px; margin-bottom:6px;">$1</h3>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong style="color:#fff;">$1</strong>')
+    .replace(/\*(.*?)\*/gim, '<em style="color:#cbd5e1;">$1</em>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+</script>
+
+<style>
+.chat-bubble {
+  max-width: 85%;
+  padding: 14px 18px;
+  border-radius: 10px;
+}
+.chat-bubble.bot {
+  background: #090e1c;
+  border: 1px solid var(--border-color);
+  align-self: flex-start;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+.chat-bubble.user {
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  align-self: flex-end;
+}
+</style>
+{% endblock %}

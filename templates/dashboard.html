@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Security Home | LOGIN TWIN{% endblock %}
+{% block page_title %}Security Overview{% endblock %}
+
+{% block content %}
+<!-- Security home overview -->
+<div class="card dashboard-hero" style="margin-bottom: 24px; padding: 26px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(99, 102, 241, 0.08) 100%); border-color: rgba(56, 189, 248, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
+    <div style="max-width: 580px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span class="badge badge-low">SECURITY TOOLS READY</span>
+        <span style="font-size: 0.8rem; color: var(--accent-sky); font-family: var(--font-mono);">LOGIN AND EVENT MONITORING</span>
+        <span id="dashboardSyncStatus" class="badge badge-status" aria-live="polite">Live updates on</span>
+      </div>
+      <h2 style="font-size: 1.55rem; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px;">
+        Your security activity, at a glance
+      </h2>
+      <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 18px;">
+        Check suspicious links, review sign-in activity, learn to spot phishing, and follow up on security alerts. Link checks happen here in the app; submitted links are never opened.
+      </p>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="{{ url_for('url_analyzer.url_analyzer_page') }}" class="btn btn-primary btn-sm">🔍 Check a link</a>
+        <a href="{{ url_for('phishing_lab.phishing_lab_index') }}" class="btn btn-secondary btn-sm">🛡️ Take the phishing quiz</a>
+        <a href="{{ url_for('soc_monitor.soc_events_page') }}" class="btn btn-secondary btn-sm">📡 View sign-in activity</a>
+        <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-secondary btn-sm" style="color: var(--accent-sky);">🤖 Get help</a>
+        <a href="{{ url_for('dashboard.export_dashboard_data') }}" class="btn btn-secondary btn-sm" download>📥 Download report</a>
+      </div>
+    </div>
+
+    <div class="dashboard-process-panel" style="flex: 1; min-width: 290px; max-width: 440px;">
+      <img class="home-security-photo" src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&amp;fit=crop&amp;w=960&amp;q=85" alt="Close-up of a glowing circuit board representing cybersecurity technology">
+      <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent-sky); margin-bottom: 8px; font-weight: 700;">
+        How activity is reviewed
+      </div>
+      <ol class="dashboard-process">
+        <li><span class="process-step">1</span><span><strong>Add activity</strong><small>Upload a log or try a sample.</small></span></li>
+        <li><span class="process-step">2</span><span><strong>Check for patterns</strong><small>Repeated or unusual activity creates an alert.</small></span></li>
+        <li><span class="process-step">3</span><span><strong>Review and respond</strong><small>See related activity and choose what to do next.</small></span></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- Top Metrics Row -->
+<div class="grid-metrics">
+  <div class="card">
+    <div class="metric-title">
+      <span>Events recorded</span>
+      <span>📡</span>
+    </div>
+    <div class="metric-value" id="totalEventsMetric">{{ metrics.total_events }}</div>
+    <div class="metric-subtitle">Sign-ins and other activity</div>
+  </div>
+
+  <div class="card">
+    <div class="metric-title">
+      <span>Alerts to review</span>
+      <span>⚠️</span>
+    </div>
+    <div class="metric-value" style="color: {% if metrics.active_alerts > 0 %}var(--sev-high){% else %}var(--text-main){% endif %};">
+      <span id="activeAlertsMetric">{{ metrics.active_alerts }}</span>
+    </div>
+    <div class="metric-subtitle">New or being reviewed</div>
+  </div>
+
+  <div class="card">
+    <div class="metric-title">
+      <span>Urgent alerts</span>
+      <span>🔥</span>
+    </div>
+    <div class="metric-value" style="color: {% if metrics.critical_alerts > 0 %}var(--sev-critical){% else %}var(--text-dim){% endif %};">
+      <span id="criticalAlertsMetric">{{ metrics.critical_alerts }}</span>
+    </div>
+    <div class="metric-subtitle">Need attention first</div>
+  </div>
+
+  <div class="card">
+    <div class="metric-title">
+      <span>Links checked</span>
+      <span>🔍</span>
+    </div>
+    <div class="metric-value" id="totalUrlScansMetric">{{ metrics.total_url_scans }}</div>
+    <div class="metric-subtitle"><span id="suspiciousUrlsMetric">{{ metrics.suspicious_urls }}</span> need a closer look</div>
+  </div>
+
+  <div class="card">
+    <div class="metric-title">
+      <span>Phishing quizzes completed</span>
+      <span>🛡️</span>
+    </div>
+    <div class="metric-value" id="completedQuizzesMetric">{{ metrics.completed_quizzes }}</div>
+    <div class="metric-subtitle">Saved training results</div>
+  </div>
+</div>
+
+<!-- When Database is Pristine (0 events) -->
+  <div class="empty-state-card" id="dashboardEmptyState" style="margin-bottom: 28px; {% if metrics.total_events > 0 %}display: none;{% endif %}">
+    <img src="{{ url_for('static', filename='images/radar-empty.svg') }}" alt="Radar Empty State" class="empty-state-img">
+    <h3 class="empty-state-title">No activity recorded yet</h3>
+    <p class="empty-state-desc">
+      This page will show security activity after you add a log or try a sample. You can also check a link or take the phishing awareness quiz.
+    </p>
+
+    <div style="display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+      <form action="{{ url_for('soc_monitor.demo_events_action') }}" method="POST" style="margin: 0;">
+        <input type="hidden" name="scenario" value="brute_force">
+        <button type="submit" class="btn btn-secondary btn-sm">⚡ Try repeated sign-in failures</button>
+      </form>
+      <form action="{{ url_for('soc_monitor.demo_events_action') }}" method="POST" style="margin: 0;">
+        <input type="hidden" name="scenario" value="password_spray">
+        <button type="submit" class="btn btn-secondary btn-sm">⚡ Try attempts across accounts</button>
+      </form>
+      <form action="{{ url_for('soc_monitor.demo_events_action') }}" method="POST" style="margin: 0;">
+        <input type="hidden" name="scenario" value="correlated_attack">
+        <button type="submit" class="btn btn-secondary btn-sm">⚡ Try a multi-step sample</button>
+      </form>
+      <a href="{{ url_for('soc_monitor.soc_events_page') }}" class="btn btn-primary btn-sm">📥 Add a log file</a>
+    </div>
+  </div>
+
+<div id="dashboardActivity" style="{% if metrics.total_events == 0 %}display: none;{% endif %}">
+  <!-- Active Telemetry Visual Charts Section (Chart.js) -->
+  <div class="dashboard-charts" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;">
+    <!-- Chart 1: Event Breakdown -->
+    <div class="card">
+      <div class="metric-title" style="margin-bottom: 16px;">
+        <span>Activity by type</span>
+        <span class="badge badge-status">Event totals</span>
+      </div>
+      <div style="height: 240px; position: relative;">
+        <canvas id="eventsTypeChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart 2: Outcome Breakdown -->
+    <div class="card">
+      <div class="metric-title" style="margin-bottom: 16px;">
+        <span>Sign-in and request results</span>
+        <span class="badge badge-status">Result totals</span>
+      </div>
+      <div style="height: 240px; position: relative;">
+        <canvas id="eventsOutcomeChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Alerts Table Preview -->
+  <div class="card" style="margin-bottom: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div class="metric-title" style="margin-bottom: 0;">
+        <span>Recent alerts</span>
+        <span class="badge badge-medium"><span id="recentAlertCount">{{ metrics.recent_alerts | length }}</span> to review</span>
+      </div>
+      <a href="{{ url_for('alerts.alerts_page') }}" class="btn btn-secondary btn-sm">View all alerts →</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>Detection rule</th>
+            <th>Title</th>
+            <th>Severity</th>
+            <th>Status</th>
+            <th>Related activity</th>
+            <th>Most recent</th>
+            <th>Next step</th>
+          </tr>
+        </thead>
+        <tbody id="recentAlertsBody">
+          {% for alt in metrics.recent_alerts %}
+            <tr>
+              <td><span class="badge badge-status">{{ alt.rule_code }}</span></td>
+              <td style="font-weight: 600; color: var(--text-main);">{{ alt.title }}</td>
+              <td><span class="badge badge-{{ alt.severity | lower }}">{{ alt.severity }}</span></td>
+              <td><span class="badge badge-status {{ alt.status | lower }}">{{ alt.status }}</span></td>
+              <td><span class="code-font" style="color: var(--accent-sky);">{{ alt.event_count }} events</span></td>
+              <td style="color: var(--text-dim); font-size: 0.8rem;">{{ alt.last_seen | time_ago }}</td>
+              <td><a href="{{ url_for('alerts.alert_detail_page', alert_id=alt.id) }}" class="btn btn-secondary btn-sm">Review alert</a></td>
+            </tr>
+          {% else %}
+            <tr id="noRecentAlerts"><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">No alerts to review.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<!-- Essential Pillar Showcase Cards -->
+<h2 class="section-heading">Explore the tools</h2>
+<p class="section-description">Use these tools to learn about common online threats and review activity.</p>
+<div class="dashboard-tools" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px;">
+  <!-- Pillar 1 Card -->
+  <div class="card" style="display: flex; gap: 16px; align-items: flex-start;">
+    <img src="{{ url_for('static', filename='images/url-scanner.svg') }}" alt="URL Scanner" style="width: 50px; height: 50px; flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(56,189,248,0.3));">
+    <div>
+      <h3 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 4px;">Link checker</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+        Checks a link for common warning signs without opening it. Results explain which signs were found.
+      </p>
+      <a href="{{ url_for('url_analyzer.url_analyzer_page') }}" style="font-size: 0.8rem; color: var(--accent-sky); text-decoration: none; font-weight: 700;">Check a link →</a>
+    </div>
+  </div>
+
+  <!-- Pillar 2 Card -->
+  <div class="card" style="display: flex; gap: 16px; align-items: flex-start;">
+    <img src="{{ url_for('static', filename='images/phishing-lab.svg') }}" alt="Phishing Quiz" style="width: 50px; height: 50px; flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(245,158,11,0.3));">
+    <div>
+      <h3 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 4px;">Phishing awareness</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+        Practice spotting fake messages and learn what to check before you click. The quiz never asks for your password.
+      </p>
+      <a href="{{ url_for('phishing_lab.phishing_lab_index') }}" style="font-size: 0.8rem; color: var(--accent-sky); text-decoration: none; font-weight: 700;">Take the quiz →</a>
+    </div>
+  </div>
+
+  <!-- Pillar 3 Card -->
+  <div class="card" style="display: flex; gap: 16px; align-items: flex-start;">
+    <img src="{{ url_for('static', filename='images/hash-chain.svg') }}" alt="Hash Chain" style="width: 65px; height: auto; flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(16,185,129,0.3));">
+    <div>
+      <h3 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 4px;">Activity history</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+        Review important changes made in the app and check whether the saved history has been changed.
+      </p>
+      <a href="{{ url_for('incidents.audit_page') }}" style="font-size: 0.8rem; color: var(--accent-sky); text-decoration: none; font-weight: 700;">Review activity history →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const chartTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim();
+  const chartGridColor = 'rgba(23, 49, 60, 0.1)';
+  const alertBody = document.getElementById('recentAlertsBody');
+  const syncStatus = document.getElementById('dashboardSyncStatus');
+
+  const typeCtx = document.getElementById('eventsTypeChart');
+  const outcomeCtx = document.getElementById('eventsOutcomeChart');
+  const typeLabels = {{ metrics.events_by_type | map(attribute='event_type') | list | tojson }};
+  const typeCounts = {{ metrics.events_by_type | map(attribute='cnt') | list | tojson }};
+  const outcomeLabels = {{ metrics.events_by_outcome | map(attribute='outcome') | list | tojson }};
+  const outcomeCounts = {{ metrics.events_by_outcome | map(attribute='cnt') | list | tojson }};
+
+  if (window.Chart && typeCtx) {
+    window.eventsTypeChart = new Chart(typeCtx, {
+      type: 'doughnut',
+      data: {
+        labels: typeLabels,
+        datasets: [{
+          data: typeCounts,
+          backgroundColor: ['#0284c7', '#6366f1', '#f59e0b', '#10b981', '#a855f7', '#ec4899'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { color: chartTextColor, font: { family: 'Inter', size: 11 } } }
+        }
+      }
+    });
+  }
+
+  if (window.Chart && outcomeCtx) {
+    window.eventsOutcomeChart = new Chart(outcomeCtx, {
+      type: 'bar',
+      data: {
+        labels: outcomeLabels,
+        datasets: [{
+          label: 'Events Count',
+          data: outcomeCounts,
+          backgroundColor: outcomeLabels.map(l => l === 'success' ? '#10b981' : (l === 'failure' ? '#ef4444' : (l === 'denied' ? '#f59e0b' : '#38bdf8'))),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { ticks: { color: chartTextColor }, grid: { display: false } },
+          y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }
+        }
+      }
+    });
+  }
+
+  function formatTimeAgo(value) {
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+    if (!Number.isFinite(seconds)) return value || 'Not available';
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  }
+
+  function addAlertCell(row, content, className) {
+    const cell = document.createElement('td');
+    if (className) cell.className = className;
+    if (content instanceof HTMLElement) cell.appendChild(content);
+    else cell.textContent = content ?? '';
+    row.appendChild(cell);
+  }
+
+  function addBadge(text, className) {
+    const badge = document.createElement('span');
+    badge.className = className;
+    badge.textContent = text;
+    return badge;
+  }
+
+  function renderRecentAlerts(alerts) {
+    alertBody.replaceChildren();
+    document.getElementById('recentAlertCount').textContent = alerts.length;
+    if (!alerts.length) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 7;
+      cell.style.cssText = 'text-align:center;padding:24px;color:var(--text-muted)';
+      cell.textContent = 'No alerts to review.';
+      row.appendChild(cell);
+      alertBody.appendChild(row);
+      return;
+    }
+
+    alerts.forEach(alert => {
+      const row = document.createElement('tr');
+      addAlertCell(row, addBadge(alert.rule_code, 'badge badge-status'));
+      const title = document.createElement('span');
+      title.style.fontWeight = '600';
+      title.textContent = alert.title;
+      addAlertCell(row, title);
+      addAlertCell(row, addBadge(alert.severity, `badge badge-${String(alert.severity).toLowerCase()}`));
+      addAlertCell(row, addBadge(alert.status, `badge badge-status ${String(alert.status).toLowerCase()}`));
+      addAlertCell(row, `${alert.event_count} events`, 'code-font');
+      addAlertCell(row, formatTimeAgo(alert.last_seen));
+      const link = document.createElement('a');
+      link.href = `/alerts/${encodeURIComponent(alert.id)}`;
+      link.className = 'btn btn-secondary btn-sm';
+      link.textContent = 'Review alert';
+      addAlertCell(row, link);
+      alertBody.appendChild(row);
+    });
+  }
+
+  async function refreshDashboard() {
+    try {
+      const response = await fetch("{{ url_for('dashboard.api_dashboard_stats') }}", { cache: 'no-store' });
+      if (!response.ok) throw new Error('Dashboard stats request failed');
+      const stats = await response.json();
+
+      document.getElementById('totalEventsMetric').textContent = stats.total_events;
+      document.getElementById('activeAlertsMetric').textContent = stats.active_alerts;
+      document.getElementById('criticalAlertsMetric').textContent = stats.critical_alerts;
+      document.getElementById('totalUrlScansMetric').textContent = stats.total_url_scans;
+      document.getElementById('suspiciousUrlsMetric').textContent = stats.suspicious_urls;
+      document.getElementById('completedQuizzesMetric').textContent = stats.completed_quizzes;
+
+      document.getElementById('dashboardEmptyState').style.display = stats.total_events ? 'none' : '';
+      document.getElementById('dashboardActivity').style.display = stats.total_events ? '' : 'none';
+      renderRecentAlerts(stats.recent_alerts);
+
+      if (window.eventsTypeChart) {
+        window.eventsTypeChart.data.labels = stats.events_by_type.map(item => item.event_type);
+        window.eventsTypeChart.data.datasets[0].data = stats.events_by_type.map(item => item.cnt);
+        window.eventsTypeChart.update('none');
+      }
+      if (window.eventsOutcomeChart) {
+        const outcomes = stats.events_by_outcome;
+        window.eventsOutcomeChart.data.labels = outcomes.map(item => item.outcome);
+        window.eventsOutcomeChart.data.datasets[0].data = outcomes.map(item => item.cnt);
+        window.eventsOutcomeChart.data.datasets[0].backgroundColor = outcomes.map(item => item.outcome === 'success' ? '#10b981' : (item.outcome === 'failure' ? '#ef4444' : (item.outcome === 'denied' ? '#f59e0b' : '#38bdf8')));
+        window.eventsOutcomeChart.update('none');
+      }
+      syncStatus.textContent = 'Live updates on';
+    } catch (error) {
+      syncStatus.textContent = 'Updates paused';
+    }
+  }
+
+  refreshDashboard();
+  window.setInterval(refreshDashboard, 5000);
+});
+</script>
+{% endblock %}
